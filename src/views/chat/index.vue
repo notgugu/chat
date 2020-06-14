@@ -1,9 +1,9 @@
 <template>
 <div class="chat-tool">
         <div class="chat-users" v-show="!isChatPrivate">
-            <a @click.stop.prevent="chatWithSomeOne(item.key,item.name)" v-for="(item,index) in userNewMsgCountData" :key="index" v-show="item.key != key">{{ item.name }} {{item.count != 0 ? item.count : ''}}</a>
+            <a @click.stop.prevent="chatWithSomeOne(item.key,item.name,item)" v-for="(item,index) in userNewMsgCountData" :key="index" v-show="item.key != key">{{ item.name }} {{item.count != null && item.count > 0 ? item.count : ''}}</a>
         </div>
-        <div class="back" v-show="isChatPrivate"><span @click="isChatPrivate = false;"><</span></div>
+        <div class="back" v-show="isChatPrivate"><span @click="isChatPrivate = false;">&lt;</span></div>
         <h3 class="title" v-show="!isChatPrivate">一起来聊天 - [ {{name}} ]</h3>
         <h3 class="title" v-show="isChatPrivate">[{{otherName}}] - [ {{name}} ]</h3>
         <div class="chat-wrap" v-show="!isChatPrivate"> 
@@ -64,7 +64,7 @@ export default {
   },
   created(){
    let name = window.prompt('请输入您的姓名');
-   name = name == null ? '匿名'+String(Math.random()).slice(3,7): name;
+   name = name == null ? '匿名'+ String(Math.random()).slice(3,7): name;
    this.name = name;
    this.wsObj = ws({
        success: (data)=>{//接收到服务器消息时触发
@@ -74,7 +74,6 @@ export default {
             for(let i of this.userData){
               if(this.userNewMsgCountData.length == 0){
                 this.userNewMsgCountData.push(i);
-                console.log(111);
                 return;
               }
               for(let j of this.userNewMsgCountData){
@@ -83,13 +82,13 @@ export default {
                   if(count >= this.userNewMsgCountData.length){
                     i.count = 0;
                     this.userNewMsgCountData.push(i);
-                    console.log(111);
                     count = 0;
                     break;
                   }
                 }
               }
             }
+            console.log(this.userNewMsgCountDatas)
           }
           else if(data.event == 'groupChat' || data.event == 'groupChat/status'){
             if(data.data.id != null){
@@ -102,7 +101,7 @@ export default {
           else if(data.event == 'privateChat'){
             this.chatPrivateData.push(data.data);
             for(let i of this.userNewMsgCountData){
-              if(i.key == data.data.key){
+              if(i.key == data.data.key && data.data.type == 2 && this.isChatPrivate == false){
                 i.count++;
               }
             }
@@ -189,11 +188,12 @@ export default {
        this.value = '';
        console.log(this.userNewMsgCountData)
    },
-   chatWithSomeOne(key,name){
+   chatWithSomeOne(key,name,item){
        //与人单独聊天
        this.isChatPrivate = true;
        this.otherName = name;
        this.otherKey = key;
+       item.count = 0;
    }
   },
 }

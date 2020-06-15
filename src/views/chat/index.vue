@@ -92,7 +92,6 @@ export default {
                 }
               }
             }
-            console.log(this.userData,this.userNewMsgCountData)
           }
           else if(data.event == 'groupChat' || data.event == 'groupChat/status'){
             if(data.data.id != null){//增加自己的key
@@ -151,10 +150,7 @@ export default {
 
     isOther(item){//判断消息来源来决定是否显示
       console.log(item.name == this.otherName)
-      if(item.type == 1 && item.key == this.otherKey){
-        return true;
-      }
-      else if(item.type == 2 && item.key == this.otherKey){
+      if(item.key == this.otherKey){
         return true;
       }
       else{
@@ -204,7 +200,7 @@ export default {
   },
   watch:{
     listData(){
-      this.$nextTick(() => {
+      this.$nextTick(() => {//确保dom更新后执行下面的代码
         this.$refs.groupChatNode.scrollTop = this.$refs.groupChatNode.scrollHeight; // 将页面卷到底部
       })
     },
@@ -213,6 +209,11 @@ export default {
         this.$refs.privateChatNode.scrollTop = this.$refs.privateChatNode.scrollHeight; // 将页面卷到底部
       });
     },
+    isChatPrivate(){//点入私聊时，默认显示最下面的消息
+      this.$nextTick(() => {
+        this.$refs.privateChatNode.scrollTop = this.$refs.privateChatNode.scrollHeight; // 将页面卷到底部
+      });
+    }
   },
 }
 </script>

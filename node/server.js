@@ -9,12 +9,13 @@ let server = ws.createServer((connection)=>{
         let data = JSON.parse(msg);
         if(data.event == 'groupChat'){
             //群聊接口
-            let { msg, imgHead } = data.data
+            let { msg, imgHead,name } = data.data
             //对当前发送消息的客户端发送消息
             connection.sendText(JSON.stringify({
                 code: 200,
                 event: 'groupChat',
                 data: {
+                    name,
                     msg,
                     time: moment().format('HH:mm:ss'),
                     imgHead,
@@ -28,6 +29,7 @@ let server = ws.createServer((connection)=>{
                         code: 200,
                         event: 'groupChat',
                         data: {
+                            name,
                             msg,
                             time: moment().format('HH:mm:ss'),
                             imgHead,
@@ -75,12 +77,13 @@ let server = ws.createServer((connection)=>{
             }
         }
         else if(data.event == 'privateChat'){
-            let { key,msg,imgHead } = data.data;
+            let { key,msg,imgHead,name } = data.data;
             connection.sendText(JSON.stringify({
                 code: 200,
                 event: 'privateChat',
                 data: {
                     msg,
+                    name,
                     time: moment().format('HH:mm:ss'),
                     type: 1,//1表示自己， 2表示其他人
                     imgHead,
@@ -95,6 +98,7 @@ let server = ws.createServer((connection)=>{
                         event: 'privateChat',
                         data:{
                             msg,
+                            name,
                             time: moment().format('HH:mm:ss'),
                             type: 2,
                             imgHead,

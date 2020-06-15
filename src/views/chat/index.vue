@@ -6,7 +6,8 @@
         <div class="back" v-show="isChatPrivate"><span @click="isChatPrivate = false;">&lt;</span></div>
         <h3 class="title" v-show="!isChatPrivate">一起来聊天 - [ {{name}} ]</h3>
         <h3 class="title" v-show="isChatPrivate">[{{otherName}}] - [ {{name}} ]</h3>
-        <div class="chat-wrap" v-show="!isChatPrivate"> 
+        <div>
+          <div class="chat-wrap" v-show="!isChatPrivate" ref="groupChatNode"> 
             <!--type = 1 自己的数据，2别人的数据， 3进入提示， 4离开提示-->
             <template  v-for="(item,index) in listData">
                 <div v-if="item.type == 1 || item.type == 2" class="chat-list" :class="{'chat-mine': item.type == 1}"  :key="index">
@@ -18,18 +19,20 @@
                 </div>
                 <div v-else class="chat-prompt" :key="index"><span>{{ item.name }} {{item.type == 3 ? '进入':'离开'}}本群聊</span></div>
             </template>
+          </div>
+          <div class="chat-wrap"  v-show="isChatPrivate" ref="privateChatNode">
+              <template  v-for="(item,index) in chatPrivateData">
+                  <div class="chat-list" :class="{'chat-mine': item.type == 1}"  :key="index" v-show="isOther(item)">
+                      <img class="chat-list-head" :src="item.imgHead" alt="">
+                      <div class="chat-list-main">
+                          <div class="chat-list-name">{{ item.name }} {{ item.time }}</div>
+                          <div class="chat-list-content" v-html="item.msg"></div>
+                      </div>
+                  </div>
+              </template>
+          </div>
         </div>
-        <div class="chat-wrap"  v-show="isChatPrivate">
-            <template  v-for="(item,index) in chatPrivateData">
-                <div class="chat-list" :class="{'chat-mine': item.type == 1}"  :key="index" v-show="isOther(item)">
-                    <img class="chat-list-head" :src="item.imgHead" alt="">
-                    <div class="chat-list-main">
-                        <div class="chat-list-name">{{ item.name }} {{ item.time }}</div>
-                        <div class="chat-list-content" v-html="item.msg"></div>
-                    </div>
-                </div>
-            </template>
-        </div>
+        
         <div class="chat-editor">
             <!-- <div class="chat-editor-content" placeholder="请输入内容" contenteditable="true" ref="divNode"></div> -->
             <ueditor v-model.trim="value" id="news-add" :options="{
@@ -63,50 +66,51 @@ export default {
     }
   },
   created(){
-   let name = window.prompt('请输入您的姓名');
-   name = name == null ? '匿名'+ String(Math.random()).slice(3,7): name;
+   let name = window.prompt('请输入您的姓名');//匿名随机产生昵称
+   name = name == null || '' ? '匿名'+ String(Math.random()).slice(3,7): name;
    this.name = name;
    this.wsObj = ws({
        success: (data)=>{//接收到服务器消息时触发
           if(data.event == 'groupChat/users'){
             this.userData = data.data;
-            let count = 0;
-            for(let i of this.userData){
+            for(let i of this.userData){//第一个用户直接添加
+              let count = 0;
               if(this.userNewMsgCountData.length == 0){
+                i.count = 0;
                 this.userNewMsgCountData.push(i);
-                return;
-              }
-              for(let j of this.userNewMsgCountData){
+                continue;
+              };
+              
+              for(let j of this.userNewMsgCountData){//防止重复添加
                 if(i.key != j.key){
                   count++;
                   if(count >= this.userNewMsgCountData.length){
                     i.count = 0;
                     this.userNewMsgCountData.push(i);
-                    count = 0;
                     break;
                   }
                 }
               }
             }
-            console.log(this.userNewMsgCountDatas)
+            console.log(this.userData,this.userNewMsgCountData)
           }
           else if(data.event == 'groupChat' || data.event == 'groupChat/status'){
-            if(data.data.id != null){
+            if(data.data.id != null){//增加自己的key
               this.key = data.data.key;
               return;
             }
             this.listData.push(data.data);
           }
         
-          else if(data.event == 'privateChat'){
+          else if(data.event == 'privateChat'){//私聊接口
             this.chatPrivateData.push(data.data);
             for(let i of this.userNewMsgCountData){
-              if(i.key == data.data.key && data.data.type == 2 && this.isChatPrivate == false){
+              if(i.key == data.data.key && data.data.type == 2 && this.isChatPrivate == false){//增加消息数目
                 i.count++;
               }
             }
           }
-          else if(data.event == 'groupChat/close'){
+          else if(data.event == 'groupChat/close'){//链接中断
             this.listData.push(data.data);
             for(let i of this.userNewMsgCountData){
               if(i.key == data.data.key){
@@ -157,19 +161,20 @@ export default {
         return false;
       }
     },
-   randomHeadName(){
+   randomHeadName(){//产生随机头像
      let num = Math.floor(Math.random()*51);
      num = num < 10 ? '0'+num : num;
      let name =  String(num);
      return `/static/face/i_f${name}.gif`
    },
-   submit(){
+   submit(){//提交消息到后台
        let msg = this.value
        if(this.isChatPrivate == false){
         this.wsObj.sendJson({
            event: 'groupChat',//ws接口名
            data: {
                msg,
+               name: this.name,
                imgHead: this.imgHead
            }
         })
@@ -179,6 +184,7 @@ export default {
            event: 'privateChat',//ws接口名
            data: {
                msg,
+               name: this.name,
                key: this.otherKey,
                imgHead: this.imgHead
            }
@@ -195,6 +201,18 @@ export default {
        this.otherKey = key;
        item.count = 0;
    }
+  },
+  watch:{
+    listData(){
+      this.$nextTick(() => {
+        this.$refs.groupChatNode.scrollTop = this.$refs.groupChatNode.scrollHeight; // 将页面卷到底部
+      })
+    },
+    chatPrivateData(){
+      this.$nextTick(() => {
+        this.$refs.privateChatNode.scrollTop = this.$refs.privateChatNode.scrollHeight; // 将页面卷到底部
+      });
+    },
   },
 }
 </script>

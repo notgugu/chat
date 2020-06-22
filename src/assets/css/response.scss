@@ -1,0 +1,24 @@
+@charset "utf-8";
+/*初始化样式 */
+@media screen and (max-width: 500px){
+	.app .chat-tool[class]{
+		width: 100%;
+		margin-top: 0;
+	}
+	.app .chat-list[class]{
+		width: auto;
+	}
+	.app .chat-mine[class]{
+		display: flex;
+		justify-content: flex-end;
+	}
+	.app .chat-list-main[class]{
+			max-width: 80%;
+	}
+	.app .chat-list-content[class]{
+		width: auto;
+		text-align: justify;
+		text-justify: newspaper;
+		word-break: break-all;
+	}
+}

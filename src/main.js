@@ -7,12 +7,7 @@ import router from './router'
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 
-import 'vue-simple-ueditor/dist/css/vue-ueditor.css'
-import VueUEditor from 'vue-simple-ueditor'
-
-Vue.use(ElementUI);
-
-Vue.use(VueUEditor);
+import '@/assets/css/index.scss'
 
 Vue.config.productionTip = false
 

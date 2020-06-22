@@ -7,7 +7,7 @@
         <h3 class="title" v-show="!isChatPrivate">一起来聊天 - [ {{name}} ]</h3>
         <h3 class="title" v-show="isChatPrivate">[{{otherName}}] - [ {{name}} ]</h3>
         <div>
-          <div class="chat-wrap" v-show="!isChatPrivate" ref="groupChatNode"> 
+          <div class="chat-wrap" v-show="!isChatPrivate" ref="groupChatNode" @scroll="scrollFun(1)"> 
             <!--type = 1 自己的数据，2别人的数据， 3进入提示， 4离开提示-->
             <template  v-for="(item,index) in listData">
                 <div v-if="item.type == 1 || item.type == 2" class="chat-list" :class="{'chat-mine': item.type == 1}"  :key="index">
@@ -20,7 +20,7 @@
                 <div v-else class="chat-prompt" :key="index"><span>{{ item.name }} {{item.type == 3 ? '进入':'离开'}}本群聊</span></div>
             </template>
           </div>
-          <div class="chat-wrap"  v-show="isChatPrivate" ref="privateChatNode">
+          <div class="chat-wrap"  v-show="isChatPrivate" ref="privateChatNode" @scroll="scrollFun(2)">
               <template  v-for="(item,index) in chatPrivateData">
                   <div class="chat-list" :class="{'chat-mine': item.type == 1}"  :key="index" v-show="isOther(item)">
                       <img class="chat-list-head" :src="item.imgHead" alt="">
@@ -31,15 +31,16 @@
                   </div>
               </template>
           </div>
+          <div v-show="isNewMsg">新消息</div>
         </div>
-        
         <div class="chat-editor">
-            <!-- <div class="chat-editor-content" placeholder="请输入内容" contenteditable="true" ref="divNode"></div> -->
-            <ueditor v-model.trim="value" id="news-add" :options="{
+            <!-- <ueditor v-model.trim="value" id="news-add" :options="{
                 toolbars: [
                     ['emotion']
-                ]
-            }" ref="ueditor"></ueditor>
+                ],
+                initialFrameWidth: '100%'
+            }" ref="ueditor"></ueditor> -->
+            <textarea name="" id="" cols="30" rows="10" v-model.trim="value" style="margin: 0px;height: 80px;width: 100%;"></textarea>
             <button class="chat-editor-btn" @click="submit()">发送</button>
         </div>
     </div>
@@ -63,6 +64,8 @@ export default {
       chatPrivateData: [],//私聊消息
       otherName: '',//当前私聊对象的name
       otherKey: '',//当前私聊对象的key
+      isNewMsg: false,
+      scrollTop: 0,
     }
   },
   created(){
@@ -136,6 +139,9 @@ export default {
    this.imgHead = this.randomHeadName();
 
   },
+  mounted(){
+    this.scrollTop = this.$refs.groupChatNode.scrollTop;
+  },
   destroyed(){
     ws.sendJson({
       event: 'groupChat/status',//ws接口名
@@ -147,7 +153,20 @@ export default {
     })
   },
   methods: {
-
+    scrollFun(num){
+      this.scrollTop = num == 1 ? this.$refs.groupChatNode.scrollTop : this.$refs.privateChatNode.scrollTop;
+      if(num == 1){
+        if(this.scrollTop == this.$refs.groupChatNode.scrollHeight - this.$refs.groupChatNode.offsetHeight){
+          this.isNewMsg = false;
+        }
+      }
+      else{
+        if(this.scrollTop == this.$refs.privateChatNode.scrollHeight - this.$refs.privateChatNode.offsetHeight){
+          this.isNewMsg = false;
+        }
+      }
+      
+    },
     isOther(item){//判断消息来源来决定是否显示
       console.log(item.name == this.otherName)
       if(item.key == this.otherKey){
@@ -186,9 +205,10 @@ export default {
            }
          })
        }
-       
        this.value = '';
-       console.log(this.userNewMsgCountData)
+       this.$nextTick(() => {//确保dom更新后执行下面的代码
+        this.$refs.groupChatNode.scrollTop = this.$refs.groupChatNode.scrollHeight; // 将页面卷到底部
+       })
    },
    chatWithSomeOne(key,name,item){
        //与人单独聊天
@@ -200,11 +220,19 @@ export default {
   },
   watch:{
     listData(){
+      if(this.$refs.groupChatNode.scrollTop < this.$refs.groupChatNode.scrollHeight - this.$refs.groupChatNode.offsetHeight){
+        this.isNewMsg = true;
+        return;//滚动条在最下面时自动滚动
+      }
       this.$nextTick(() => {//确保dom更新后执行下面的代码
         this.$refs.groupChatNode.scrollTop = this.$refs.groupChatNode.scrollHeight; // 将页面卷到底部
       })
     },
     chatPrivateData(){
+      if(this.$refs.privateChatNode.scrollTop < this.$refs.privateChatNode.scrollHeight - this.$refs.privateChatNode.offsetHeight){
+        this.isNewMsg = true;
+        return;//滚动条在最下面时自动滚动
+      }
       this.$nextTick(() => {
         this.$refs.privateChatNode.scrollTop = this.$refs.privateChatNode.scrollHeight; // 将页面卷到底部
       });
@@ -213,14 +241,14 @@ export default {
       this.$nextTick(() => {
         this.$refs.privateChatNode.scrollTop = this.$refs.privateChatNode.scrollHeight; // 将页面卷到底部
       });
-    }
+    },
   },
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-.chat-tool{position: relative;  width: 498px; background: #fff; margin: 0 auto;}
+.chat-tool{position: relative;  width: 498px; background: #fff; margin: 0 auto; margin-top: 20px;}
 .chat-tool .title{ line-height: 35px; background-color: #074775; font-size: 14px; 
 padding-left:5px; border:#002d61 1px solid; color:#fff; font-weight: normal;}
 .chat-wrap{ height: 335px; padding-bottom: 10px; box-sizing: border-box; overflow-y: auto;}
@@ -232,7 +260,9 @@ background-color: #eff3f6; border-radius: 3px; color: #a3b0b9;}
 .chat-list-name{ height: 21px; line-height: 18px; padding-left: 3px;
   color: #6e8096;}
 .chat-list-content{ width: 380px; padding: 10px 6px; box-sizing: border-box; border-radius: 8px;
-background-color: #eee; line-height: 18px;}
+background-color: #eee; line-height: 18px;text-align: justify;
+    text-justify: newspaper;
+    word-break: break-all;}
 .chat-mine{ margin-left: 51px;}
 .chat-mine .chat-list-head{ order: 2;}
 .chat-mine .chat-list-main{ order: 1;}
@@ -242,7 +272,7 @@ background-color: #eee; line-height: 18px;}
 .chat-icon .face{display: inline-block; width: 16px; height: 16px; border-radius: 50%; 
 background-color: #000; vertical-align: middle; margin-left: 10px;}
 .chat-editor{ height: 108px;}
-.chat-editor-content{ width: 478px; height: 60px; line-height: 18px; margin: 4px 0 0 7px; overflow-y: auto;}
+.chat-editor-content{ width: 99%; height: 60px; line-height: 18px; margin: 4px 0 0 7px; overflow-y: auto;}
 .chat-editor-btn{ float:right; margin-right: 8px; width: 52px; height: 25px; border: 0; background-color: #90c4f4;
 border-radius: 3px; font-size: 14px; color: #fff; margin-top: 8px;}
 .chat-editor-content:empty:before{
@@ -257,4 +287,5 @@ border-radius: 3px; font-size: 14px; color: #fff; margin-top: 8px;}
 .chat-users{ position: absolute; left: -200px; height: 100%; overflow-y: auto; width: 200px; padding: 10px; box-sizing: border-box; }
 .chat-users a{ display: block;margin-right: 10px; color: blue; cursor: pointer; text-decoration: underline; text-align: center;}
 .back{position: absolute; font-size: 26px; left:-150px; top: -20px;}
+textarea{outline: none;}
 </style>

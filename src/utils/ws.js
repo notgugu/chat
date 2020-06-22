@@ -13,7 +13,7 @@ export function ws(options){
   open     @function
   */
  if(window.WebSocket){
-    var ws = new WebSocket("ws://127.0.0.1:8001");
+    var ws = new WebSocket(`ws://${location.host}/ws/v1`);
 
     ws.onopen = function()
     {

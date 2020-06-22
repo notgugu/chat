@@ -12,17 +12,26 @@ module.exports = {
     assetsPublicPath: '/',
     proxyTable: {
       '/api/v1': {// '/api/v1':匹配项
-        target: 'http://127.0.0.1:8089',// 接口的域名
-　　　　// secure: false,// 如果是https接口，需要配置这个参数
-        changeOrigin: true,// 如果接口跨域，需要进行这个参数配置
-        pathRewrite: {// 如果接口本身没有/api需要通过pathRewrite来重写了地址
-　　　　　'^/api/v1': ''
+            target: 'http://127.0.0.1:8089',// 接口的域名
+    　　　　// secure: false,// 如果是https接口，需要配置这个参数
+            changeOrigin: true,// 如果接口跨域，需要进行这个参数配置
+            pathRewrite: {// 如果接口本身没有/api需要通过pathRewrite来重写了地址
+    　　　　　'^/api/v1': ''
+            }
+        },
+        '/ws/v1': {
+            target: 'ws://127.0.0.1:8001',// 接口的域名
+            ws: true,
+    　　　　secure: false,// 如果是https接口，需要配置这个参数
+            //changeOrigin: true,// 如果接口跨域，需要进行这个参数配置
+            pathRewrite: {// 如果接口本身没有/api需要通过pathRewrite来重写了地址
+    　　　　　'^/ws/v1': ''
+            }
         }
-      }
     },
 
     // Various Dev Server settings
-    host: 'localhost', // can be overwritten by process.env.HOST
+    host: '0.0.0.0', // can be overwritten by process.env.HOST
     port: 8080, // can be overwritten by process.env.PORT, if port is in use, a free one will be determined
     autoOpenBrowser: false,
     errorOverlay: true,
@@ -58,7 +67,7 @@ module.exports = {
      * Source Maps
      */
 
-    productionSourceMap: true,
+    productionSourceMap: false,
     // https://webpack.js.org/configuration/devtool/#production
     devtool: '#source-map',
 
@@ -66,7 +75,7 @@ module.exports = {
     // Surge or Netlify already gzip all static assets for you.
     // Before setting to `true`, make sure to:
     // npm install --save-dev compression-webpack-plugin
-    productionGzip: false,
+    productionGzip: true,
     productionGzipExtensions: ['js', 'css'],
 
     // Run the build command with an extra argument to
